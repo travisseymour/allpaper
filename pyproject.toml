@@ -1,0 +1,103 @@
+# To install deps from toml
+# -------------------------
+# > pip install .[dev] && pip uninstall .
+# OR
+# > make install
+#
+# To create a new version
+# -------------------------
+# 1. Change the version here
+# 2. do a git commit
+# 3. do a git push
+
+
+[build-system]
+requires = ["setuptools>=46.4.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AllPaper"
+version = "2026.10.11.1"
+description = "A scriptable per-monitor wallpaper setter for Linux Mint/Cinnamon with GUI and CLI interfaces, supporting LightDM login screen backgrounds."
+authors = [{ name = "Travis L. Seymour, PhD", email = "nogard@ucsc.edu" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+keywords = [
+    "linux",
+    "wallpaper",
+    "background",
+    "multi-monitor",
+    "cinnamon",
+    "x11",
+    "lightdm",
+    "gui",
+    "cli",
+    "desktop"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Desktop Environment",
+    "Topic :: Utilities",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: POSIX :: Linux"
+]
+dependencies = [
+    "typer>=0.9.0",
+    "PySide6>=6.5.0",
+    "Pillow>=9.0.0",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/travisseymour/allpaper/issues"
+"Documentation" = "https://github.com/travisseymour/allpaper#readme"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "build",
+    "check-manifest",
+    "pyappdist",
+]
+
+[project.scripts]
+allpaper = "allpaper.main:app"
+allpaper-gui = "allpaper.gui:launch_gui"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["allpaper", "allpaper.*"]
+namespaces = false
+
+# pull in any files defined in MANIFEST.in use with importlib.resources
+[tool.setuptools]
+include-package-data = true
+
+[tool.ruff]
+line-length = 120
+lint.ignore = [
+#    "F821",  # undefined name
+    "F841",  # Ignore unused variables (e.g., `_` placeholders)
+    "E722"   # Ignore bare except (ensure explicit exceptions in real code)
+]
+
+[tool.pyappdist]
+name = "allpaper"
+python = "3.12"
+
+[[tool.pyappdist.launchers]]
+name = "allpaper"
+entry = "allpaper.main:app"
+gui = true
+
+[[tool.pyappdist.targets]]
+name = "linux"
+platform = "linux-x86_64"
+format = "linux"
