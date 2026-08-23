@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "AllPaper"
-version = "2026.10.11.1"
+version = "2026.10.22.1"
 description = "A scriptable per-monitor wallpaper setter for Linux Mint/Cinnamon with GUI and CLI interfaces, supporting LightDM login screen backgrounds."
 authors = [{ name = "Travis L. Seymour, PhD", email = "nogard@ucsc.edu" }]
 license = { file = "LICENSE" }

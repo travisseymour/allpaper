@@ -373,9 +373,12 @@ class AllPaperGUI(QMainWindow):
                         shutil.copy2(login_image_path, login_dest)
 
                         # Run sudo command to update slick-greeter.conf
+                        # Preserve PATH so python3 and other commands can be found
                         cmd = [
                             "sudo",
                             "-S",
+                            "env",
+                            f"PATH={os.environ.get('PATH', '')}",
                             "python3",
                             "-c",
                             f"import configparser; "
