@@ -347,7 +347,9 @@ def main(
         if old.name != dest_name:
             old.unlink()
 
-    shutil.copy2(filename, dest_path)
+    # Only copy if source and destination are different files
+    if not dest_path.exists() or not os.path.samefile(filename, dest_path):
+        shutil.copy2(filename, dest_path)
 
     if monitor == 0:
         set_login_screen_background(dest_path)

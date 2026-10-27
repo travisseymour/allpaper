@@ -370,7 +370,9 @@ class AllPaperGUI(QMainWindow):
                         login_dest = CONFIG_DIR / "wallpaper_0.png"
                         import shutil
 
-                        shutil.copy2(login_image_path, login_dest)
+                        # Only copy if source and destination are different files
+                        if not login_dest.exists() or not os.path.samefile(login_image_path, login_dest):
+                            shutil.copy2(login_image_path, login_dest)
 
                         # Run sudo command to update slick-greeter.conf
                         # Preserve PATH so python3 and other commands can be found
@@ -413,7 +415,9 @@ class AllPaperGUI(QMainWindow):
                     login_dest = CONFIG_DIR / "wallpaper_0.png"
                     import shutil
 
-                    shutil.copy2(login_image_path, login_dest)
+                    # Only copy if source and destination are different files
+                    if not login_dest.exists() or not os.path.samefile(login_image_path, login_dest):
+                        shutil.copy2(login_image_path, login_dest)
                     set_login_screen_background(login_dest)
                     self.login_section.reset_changed()
 
@@ -438,7 +442,9 @@ class AllPaperGUI(QMainWindow):
                             if old.name != dest_name:
                                 old.unlink()
 
-                        shutil.copy2(image_path, dest_path)
+                        # Only copy if source and destination are different files
+                        if not dest_path.exists() or not os.path.samefile(image_path, dest_path):
+                            shutil.copy2(image_path, dest_path)
 
                         # Update state
                         output_name = mon["name"]
