@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.resources
 import os
 import subprocess
@@ -237,7 +238,11 @@ class AllPaperGUI(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("All Paper v2026.10.1")
+        try:
+            version = importlib.metadata.version("AllPaper")
+        except importlib.metadata.PackageNotFoundError:
+            version = "dev"
+        self.setWindowTitle(f"AllPaper v{version}")
         self.setMinimumSize(800, 600)
 
         # Setup theme detection
