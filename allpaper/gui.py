@@ -1,59 +1,43 @@
-"""
-scriptable per-monitor wallpaper setter for Linux Mint / Cinnamon (X11) with both GUI and CLI interfaces
-Copyright (C) 2026  Travis L. Seymour, PhD
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
+# SPDX-FileCopyrightText: Allpaper | Copyright (c) 2022 Travis L. Seymour, PhD <nogard@ucsc.edu>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 
+import importlib.resources
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap, QPalette, QColor
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QPalette, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
-    QInputDialog,
-    QLineEdit,
 )
 
 from allpaper.main import (
     CONFIG_DIR,
+    SLICK_GREETER_CONF,
     Mode,
+    apply_spanned_via_gsettings,
     get_monitors,
     load_state,
-    set_login_screen_background,
     regenerate_spanned,
-    apply_spanned_via_gsettings,
     save_state,
-    SLICK_GREETER_CONF,
+    set_login_screen_background,
 )
-
 
 """
 PySide6 GUI for AllPaper wallpaper management.
@@ -74,7 +58,7 @@ class ImageDropLabel(QLabel):
         self.setAlignment(Qt.AlignCenter)
         self._update_style()
         self.setText("Double-click or\ndrag image here")
-        self._image_path: Optional[str] = None
+        self._image_path: str | None = None
 
     def _update_style(self):
         """Update stylesheet based on current palette (theme-aware)."""
@@ -115,7 +99,7 @@ class ImageDropLabel(QLabel):
         else:
             self.setText("Image not found")
 
-    def get_image_path(self) -> Optional[str]:
+    def get_image_path(self) -> str | None:
         """Get the current image path."""
         return self._image_path
 
@@ -221,7 +205,7 @@ class MonitorSection(QWidget):
         """Reset the changed flag."""
         self._changed = False
 
-    def get_image_path(self) -> Optional[str]:
+    def get_image_path(self) -> str | None:
         """Get the selected image path."""
         return self.image_label.get_image_path()
 
@@ -376,13 +360,7 @@ class AllPaperGUI(QMainWindow):
 
                         # Run sudo command to update slick-greeter.conf
                         # Preserve PATH so python3 and other commands can be found
-                        cmd = [
-                            "sudo",
-                            "-S",
-                            "env",
-                            f"PATH={os.environ.get('PATH', '')}",
-                            "python3",
-                            "-c",
+                        python_script = (
                             f"import configparser; "
                             f"from pathlib import Path; "
                             f"conf = Path('{SLICK_GREETER_CONF}'); "
@@ -391,24 +369,33 @@ class AllPaperGUI(QMainWindow):
                             f"'Greeter' not in config and config.add_section('Greeter'); "
                             f"config.set('Greeter', 'background', str('{login_dest}')); "
                             f"config.set('Greeter', 'draw-user-backgrounds', 'false'); "
-                            f"config.write(conf.open('w'))",
+                            f"config.write(conf.open('w'))"
+                        )
+                        cmd = [
+                            "sudo",
+                            "-S",
+                            "env",
+                            f"PATH={os.environ.get('PATH', '')}",
+                            "python3",
+                            "-c",
+                            python_script,
                         ]
 
                         try:
                             proc = subprocess.Popen(
                                 cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
                             )
-                            stdout, stderr = proc.communicate(input=password + "\n", timeout=10)
+                            _stdout, stderr = proc.communicate(input=password + "\n", timeout=10)
 
                             if proc.returncode != 0:
-                                raise Exception(f"Failed to update login screen: {stderr}")
+                                raise RuntimeError(f"Failed to update login screen: {stderr}")
 
                             self.login_section.reset_changed()
                         except subprocess.TimeoutExpired:
                             proc.kill()
-                            raise Exception("Login screen update timed out")
-                        except Exception as e:
-                            QMessageBox.critical(self, "Error", f"Failed to update login screen: {str(e)}")
+                            raise RuntimeError("Login screen update timed out")
+                        except Exception as e:  # noqa: BLE001
+                            QMessageBox.critical(self, "Error", f"Failed to update login screen: {e!s}")
                             login_needs_update = False
                 else:
                     # Already running as root
@@ -460,8 +447,55 @@ class AllPaperGUI(QMainWindow):
 
             QMessageBox.information(self, "Success", "Wallpapers applied successfully!")
 
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to apply wallpapers: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.critical(self, "Error", f"Failed to apply wallpapers: {e!s}")
+
+
+def _get_icon_path() -> Path:
+    """Get the path to the app icon, extracting it to config dir if needed."""
+    # Check if icon already exists in config dir
+    icon_dest = CONFIG_DIR / "allpaper_icon.png"
+    if icon_dest.exists():
+        return icon_dest
+
+    # Extract icon from package resources
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    icon_file = importlib.resources.files("allpaper").joinpath("wallpaper_icon_by_awicon_flaticon.png")
+    with importlib.resources.as_file(icon_file) as icon_path:
+        import shutil
+
+        shutil.copy2(icon_path, icon_dest)
+
+    return icon_dest
+
+
+def _install_desktop_file(icon_path: Path) -> None:
+    """Install .desktop file to show app in Mint application launcher."""
+    desktop_dir = Path.home() / ".local" / "share" / "applications"
+    desktop_file = desktop_dir / "allpaper.desktop"
+
+    if desktop_file.exists():
+        return
+
+    desktop_dir.mkdir(parents=True, exist_ok=True)
+
+    desktop_content = f"""[Desktop Entry]
+Name=AllPaper
+Comment=Per-monitor wallpaper setter for Linux Mint/Cinnamon
+Exec=allpaper-gui
+Icon={icon_path}
+Terminal=false
+Type=Application
+Categories=Utility;Settings;
+Keywords=wallpaper;background;desktop;monitor;
+"""
+    desktop_file.write_text(desktop_content)
+
+    # Update desktop database (optional, but helps with search)
+    try:
+        subprocess.run(["update-desktop-database", str(desktop_dir)], capture_output=True, check=False)
+    except FileNotFoundError:
+        pass  # Command not available, that's fine
 
 
 def launch_gui():
@@ -469,7 +503,16 @@ def launch_gui():
     app = QApplication(sys.argv)
     app.setApplicationName("AllPaper")
 
+    # Set app icon
+    icon_path = _get_icon_path()
+    app_icon = QIcon(str(icon_path))
+    app.setWindowIcon(app_icon)
+
+    # Install desktop file for Mint application launcher
+    _install_desktop_file(icon_path)
+
     window = AllPaperGUI()
+    window.setWindowIcon(app_icon)
     window.show()
 
     sys.exit(app.exec())

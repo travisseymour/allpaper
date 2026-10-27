@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "AllPaper"
-version = "2026.10.26.1"
+version = "2026.10.26.2"
 description = "A scriptable per-monitor wallpaper setter for Linux Mint/Cinnamon with GUI and CLI interfaces, supporting LightDM login screen backgrounds."
 authors = [{ name = "Travis L. Seymour, PhD", email = "nogard@ucsc.edu" }]
 license = { file = "LICENSE" }
@@ -50,7 +50,8 @@ classifiers = [
     "Operating System :: POSIX :: Linux"
 ]
 dependencies = [
-    "typer>=0.9.0",
+    "cyclopts>=3.0.0",
+    "rich>=13.0.0",
     "PySide6>=6.5.0",
     "Pillow>=9.0.0",
 ]
@@ -68,7 +69,7 @@ dev = [
 ]
 
 [project.scripts]
-allpaper = "allpaper.main:app"
+allpaper = "allpaper.main:cli"
 allpaper-gui = "allpaper.gui:launch_gui"
 
 [tool.setuptools.packages.find]
@@ -79,6 +80,9 @@ namespaces = false
 # pull in any files defined in MANIFEST.in use with importlib.resources
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.package-data]
+allpaper = ["*.png"]
 
 [tool.ruff]
 line-length = 120
@@ -94,7 +98,7 @@ python = "3.12"
 
 [[tool.pyappdist.launchers]]
 name = "allpaper"
-entry = "allpaper.main:app"
+entry = "allpaper.main:cli"
 gui = true
 
 [[tool.pyappdist.targets]]
